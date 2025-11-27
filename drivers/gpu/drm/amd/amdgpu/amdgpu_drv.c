@@ -110,6 +110,7 @@ int amdgpu_vram_limit;
 int amdgpu_vis_vram_limit;
 int amdgpu_gart_size = -1; /* auto */
 int amdgpu_gtt_size = -1; /* auto */
+int amdgpu_ps4_vram_size = 1; /* 1GB default for PS4 */
 int amdgpu_moverate = -1; /* auto */
 int amdgpu_benchmarking;
 int amdgpu_testing;
@@ -225,6 +226,15 @@ module_param_named(gartsize, amdgpu_gart_size, uint, 0600);
  */
 MODULE_PARM_DESC(gttsize, "Size of the GTT domain in megabytes (-1 = auto)");
 module_param_named(gttsize, amdgpu_gtt_size, int, 0600);
+
+/**
+ * DOC: ps4_vram_size (int)
+ * Override VRAM size for PS4 GPUs (Liverpool/Gladius) in gigabytes. Valid range is 1-4 GB.
+ * The default is 1 (1GB VRAM). This parameter only affects PS4 GPUs and is ignored for other ASICs.
+ * Note: Increasing VRAM size decreases available system RAM (total is 8GB).
+ */
+MODULE_PARM_DESC(ps4_vram_size, "PS4 GPU VRAM size in gigabytes (1-4, default=1)");
+module_param_named(ps4_vram_size, amdgpu_ps4_vram_size, int, 0600);
 
 /**
  * DOC: moverate (int)

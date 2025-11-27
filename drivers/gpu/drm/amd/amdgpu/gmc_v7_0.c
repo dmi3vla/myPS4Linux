@@ -371,8 +371,24 @@ static int gmc_v7_0_mc_init(struct amdgpu_device *adev)
 		adev->gmc.vram_width = numchan * chansize;
 	}
 	/* size in MB on si */
-	adev->gmc.mc_vram_size = RREG32(mmCONFIG_MEMSIZE) * 1024ULL * 1024ULL;
-	adev->gmc.real_vram_size = RREG32(mmCONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+	/* For PS4 GPUs (Liverpool/Gladius), allow VRAM size override via kernel parameter */
+	if ((adev->asic_type == CHIP_LIVERPOOL || adev->asic_type == CHIP_GLADIUS) && 
+	    amdgpu_ps4_vram_size > 0) {
+		/* Validate range: 1-4 GB */
+		if (amdgpu_ps4_vram_size < 1 || amdgpu_ps4_vram_size > 4) {
+			dev_warn(adev->dev, "Invalid ps4_vram_size=%d, using default 1GB\n", 
+				 amdgpu_ps4_vram_size);
+			amdgpu_ps4_vram_size = 1;
+		}
+		adev->gmc.mc_vram_size = (uint64_t)amdgpu_ps4_vram_size * 1024ULL * 1024ULL * 1024ULL;
+		adev->gmc.real_vram_size = adev->gmc.mc_vram_size;
+		dev_info(adev->dev, "PS4 VRAM size set to %dGB via kernel parameter\n", 
+			 amdgpu_ps4_vram_size);
+	} else {
+		/* Standard path: read from hardware register */
+		adev->gmc.mc_vram_size = RREG32(mmCONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+		adev->gmc.real_vram_size = RREG32(mmCONFIG_MEMSIZE) * 1024ULL * 1024ULL;
+	}
 
 	if (!(adev->flags & AMD_IS_APU)) {
 		r = amdgpu_device_resize_fb_bar(adev);
