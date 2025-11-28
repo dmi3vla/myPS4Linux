@@ -1,0 +1,82 @@
+diff -urN mesa-13.0.2-old/src/amd/common/ac_llvm_util.c mesa-13.0.2/src/amd/common/ac_llvm_util.c
+--- mesa-13.0.2-old/src/amd/common/ac_llvm_util.c
++++ mesa-13.0.2/src/amd/common/ac_llvm_util.c
+@@ -45,6 +45,8 @@
+        case CHIP_KAVERI:
+        case CHIP_KABINI:
+        case CHIP_MULLINS:
++       case CHIP_LIVERPOOL:
++       case CHIP_GLADIUS:
+                return "gfx700";
+        case CHIP_HAWAII:
+                return "hawaii";
+diff -urN mesa-13.0.2-old/src/amd/common/amd_family.h mesa-13.0.2/src/amd/common/amd_family.h
+--- mesa-13.0.2-old/src/amd/common/amd_family.h
++++ mesa-13.0.2/src/amd/common/amd_family.h
+@@ -67,6 +67,8 @@
+     CHIP_KAVERI,
+     CHIP_KABINI,
+     CHIP_MULLINS,
++    CHIP_LIVERPOOL,
++    CHIP_GLADIUS,
+     CHIP_LAST,
+ };
+ 
+diff -urN mesa-13.0.2-old/src/amd/common/amdgpu_id.h mesa-13.0.2/src/amd/common/amdgpu_id.h
+--- mesa-13.0.2-old/src/amd/common/amdgpu_id.h
++++ mesa-13.0.2/src/amd/common/amdgpu_id.h
+@@ -40,6 +40,7 @@
+        {0x9874,        0x85,   CHIP_CARRIZO},
+        {0x9874,        0x84,   CHIP_CARRIZO},
+        {0x9920,        0x0,    CHIP_LIVERPOOL},
++       {0x9924,        0x0,    CHIP_GLADIUS},
+ 
+        {0x0000,        0x0,    CHIP_UNKNOWN},
+ };
+diff -urN mesa-13.0.2-old/src/gallium/drivers/radeonsi/si_pipe.c mesa-13.0.2/src/gallium/drivers/radeonsi/si_pipe.c
+--- mesa-13.0.2-old/src/gallium/drivers/radeonsi/si_pipe.c
++++ mesa-13.0.2/src/gallium/drivers/radeonsi/si_pipe.c
+@@ -100,6 +100,11 @@
+                raster_config = 0x2a00161a;
+                raster_config_1 = 0x00000000;
+                break;
++       case CHIP_GLADIUS:
++               // Gladius: 4 SE x 8 CU x 16 RB
++               raster_config = 0x3a00161a;
++               raster_config_1 = 0x0000002e;
++               break;
+        default:
+                fprintf(stderr,
+                        "radeonsi: Unknown GPU, using 0 for raster_config\n");
+diff -urN mesa-13.0.2-old/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c mesa-13.0.2/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
+--- mesa-13.0.2-old/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
++++ mesa-13.0.2/src/amd/vulkan/winsys/amdgpu/radv_amdgpu_winsys.c
+@@ -101,6 +101,7 @@
+        case CHIP_HAWAII: return "AMD RADV HAWAII";
+        case CHIP_MULLINS: return "AMD RADV MULLINS";
+        case CHIP_LIVERPOOL: return "AMD RADV LIVERPOOL";
++       case CHIP_GLADIUS: return "AMD RADV GLADIUS";
+        case CHIP_TONGA: return "AMD RADV TONGA";
+        case CHIP_ICELAND: return "AMD RADV ICELAND";
+        case CHIP_CARRIZO: return "AMD RADV CARRIZO";
+@@ -233,6 +234,10 @@
+                ws->family = FAMILY_KV;
+                ws->rev_id = LVP_STARSHA_A0;
+                break;
++       case CHIP_GLADIUS:
++               ws->family = FAMILY_KV;
++               ws->rev_id = LVP_STARSHA_A0; // Reuse Liverpool rev_id or define new
++               break;
+        case CHIP_TONGA:
+                ws->family = FAMILY_VI;
+                ws->rev_id = VI_TONGA_P_A0;
+diff -urN mesa-13.0.2-old/src/gallium/drivers/radeon/r600_pipe_common.c mesa-13.0.2/src/gallium/drivers/radeon/r600_pipe_common.c
+--- mesa-13.0.2-old/src/gallium/drivers/radeon/r600_pipe_common.c
++++ mesa-13.0.2/src/gallium/drivers/radeon/r600_pipe_common.c
+@@ -728,6 +728,7 @@
+        case CHIP_KAVERI: return "AMD KAVERI";
+        case CHIP_KABINI: return "AMD KABINI";
+        case CHIP_LIVERPOOL: return "AMD LIVERPOOL";
++       case CHIP_GLADIUS: return "AMD GLADIUS";
+        case CHIP_HAWAII: return "AMD HAWAII";
+        case CHIP_MULLINS: return "AMD MULLINS";
