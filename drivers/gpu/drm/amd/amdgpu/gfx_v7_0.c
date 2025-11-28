@@ -4903,7 +4903,7 @@ static void gfx_v7_0_gpu_early_init(struct amdgpu_device *adev)
 	case CHIP_BONAIRE:
 		adev->gfx.config.max_shader_engines = 2;
 		adev->gfx.config.max_tile_pipes = 4;
-		adev->gfx.config.max_cu_per_sh = 7;
+		adev->gfx.config.max_cu_per_sh = 6;
 		adev->gfx.config.max_sh_per_se = 1;
 		adev->gfx.config.max_backends_per_se = 2;
 		adev->gfx.config.max_texture_channel_caches = 4;
