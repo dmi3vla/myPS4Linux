@@ -4972,12 +4972,13 @@ static void gfx_v7_0_gpu_early_init(struct amdgpu_device *adev)
 	case CHIP_GLADIUS:
 		adev->gfx.config.max_shader_engines = 4;
 		adev->gfx.config.max_tile_pipes = 8;
-		adev->gfx.config.max_cu_per_sh = 8; // 8 CUs per SE (32 total)
+		adev->gfx.config.max_cu_per_sh = 7; // 7 CUs per SE (28 total, 4 harvested)
 		adev->gfx.config.max_sh_per_se = 1;
 		adev->gfx.config.max_backends_per_se = 4; // 4 RBs per SE (16 total -> 64 ROPs)
 		adev->gfx.config.max_texture_channel_caches = 8;
 		adev->gfx.config.max_gprs = 256;
 		adev->gfx.config.max_gs_threads = 32;
+
 
 		adev->gfx.config.max_hw_contexts = 8;
 
