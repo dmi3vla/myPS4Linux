@@ -522,7 +522,15 @@ static ssize_t node_show(struct kobject *kobj, struct attribute *attr,
 		sysfs_show_32bit_prop(buffer, offs, "max_engine_clk_fcompute",
 			dev->node_props.max_engine_clk_fcompute);
 
-		sysfs_show_64bit_prop(buffer, offs, "local_mem_size", 0ULL);
+	/* Get actual VRAM size instead of hardcoded 0 - PS4 Pro fix */
+	uint64_t local_mem = 0;
+	if (dev->gpu) {
+		struct kfd_local_mem_info mem_info;
+		amdgpu_amdkfd_get_local_mem_info(dev->gpu->kgd, &mem_info);
+		local_mem = mem_info.local_mem_size_public + 
+		            mem_info.local_mem_size_private;
+	}
+	sysfs_show_64bit_prop(buffer, offs, "local_mem_size", local_mem);
 
 		sysfs_show_32bit_prop(buffer, offs, "fw_version",
 				      dev->gpu->mec_fw_version);
