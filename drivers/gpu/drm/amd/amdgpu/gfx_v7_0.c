@@ -5645,22 +5645,33 @@ static int gfx_v7_0_set_powergating_state(void *handle,
 					  enum amd_powergating_state state)
 {
 	bool gate = false;
+	bool enable = (state == AMD_PG_STATE_UNGATE);
 	struct amdgpu_device *adev = (struct amdgpu_device *)handle;
 
 	if (state == AMD_PG_STATE_GATE)
 		gate = true;
 
-	if (adev->pg_flags & (AMD_PG_SUPPORT_GFX_PG |
-			      AMD_PG_SUPPORT_GFX_SMG |
-			      AMD_PG_SUPPORT_GFX_DMG |
-			      AMD_PG_SUPPORT_CP |
-			      AMD_PG_SUPPORT_GDS |
-			      AMD_PG_SUPPORT_RLC_SMU_HS)) {
-		gfx_v7_0_update_gfx_pg(adev, gate);
-		if (adev->pg_flags & AMD_PG_SUPPORT_GFX_PG) {
-			gfx_v7_0_enable_cp_pg(adev, gate);
-			gfx_v7_0_enable_gds_pg(adev, gate);
+	switch (adev->asic_type) {
+	case CHIP_LIVERPOOL:
+	case CHIP_GLADIUS:
+		/* Send msg to SMU via Powerplay for frequency control */
+		if (adev->pg_flags & AMD_PG_SUPPORT_GFX_SMG)
+			amdgpu_dpm_set_powergating_by_smu(adev, AMD_IP_BLOCK_TYPE_GFX, enable);
+		break;
+	default:
+		if (adev->pg_flags & (AMD_PG_SUPPORT_GFX_PG |
+				      AMD_PG_SUPPORT_GFX_SMG |
+				      AMD_PG_SUPPORT_GFX_DMG |
+				      AMD_PG_SUPPORT_CP |
+				      AMD_PG_SUPPORT_GDS |
+				      AMD_PG_SUPPORT_RLC_SMU_HS)) {
+			gfx_v7_0_update_gfx_pg(adev, gate);
+			if (adev->pg_flags & AMD_PG_SUPPORT_GFX_PG) {
+				gfx_v7_0_enable_cp_pg(adev, gate);
+				gfx_v7_0_enable_gds_pg(adev, gate);
+			}
 		}
+		break;
 	}
 
 	return 0;
