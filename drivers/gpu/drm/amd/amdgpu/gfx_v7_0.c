@@ -4972,7 +4972,7 @@ static void gfx_v7_0_gpu_early_init(struct amdgpu_device *adev)
 	case CHIP_GLADIUS:
 		adev->gfx.config.max_shader_engines = 4;
 		adev->gfx.config.max_tile_pipes = 8;
-		adev->gfx.config.max_cu_per_sh = 8; // Вернул 8 т.к.   -> KFD sees:       32 active CUs 9 CUs per SE (36 total - FORCED FULL CONFIG)
+		adev->gfx.config.max_cu_per_sh = 9; // PS4 Pro: 4 SE × 1 SH × 9 CU = 36 total (32 active, 4 disabled)
 		adev->gfx.config.max_sh_per_se = 1;
 		adev->gfx.config.max_backends_per_se = 4; // 4 RBs per SE (16 total -> 64 ROPs)
 		adev->gfx.config.max_texture_channel_caches = 8;

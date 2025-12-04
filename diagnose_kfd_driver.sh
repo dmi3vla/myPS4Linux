@@ -9,9 +9,26 @@ echo "  ДИАГНОСТИКА ДРАЙВЕРА AMDKFD - ПРОВЕРКА ФЛА
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
-KERNEL_SRC="/home/noob404/Documents/myPS4Linux"
+KERNEL_SRC="/home/noob404/Documents/dev/myPS4Linux"
 KFD_DIR="$KERNEL_SRC/drivers/gpu/drm/amd/amdkfd"
 AMDGPU_DIR="$KERNEL_SRC/drivers/gpu/drm/amd/amdgpu"
+INCLUDE_DIR="$KERNEL_SRC/drivers/gpu/drm/amd/include"
+
+# Проверка существования основных директорий
+if [ ! -d "$KERNEL_SRC" ]; then
+    echo "❌ Ошибка: Директория ядра не найдена: $KERNEL_SRC"
+    exit 1
+fi
+
+if [ ! -d "$KFD_DIR" ]; then
+    echo "❌ Ошибка: KFD директория не найдена: $KFD_DIR"
+    exit 1
+fi
+
+if [ ! -d "$AMDGPU_DIR" ]; then
+    echo "❌ Ошибка: AMDGPU директория не найдена: $AMDGPU_DIR"
+    exit 1
+fi
 
 # Функция для поиска определений в коде
 search_definition() {
@@ -23,18 +40,21 @@ search_definition() {
 }
 
 # Функция для вывода секции файла
+# Использование: show_code_section файл паттерн контекст
+# Паттерн поддерживает расширенные regex (через -E)
 show_code_section() {
     local file="$1"
     local pattern="$2"
-    local context="$3"
+    local context="${3:-10}"  # По умолчанию 10 строк контекста
     
     if [ ! -f "$file" ]; then
         echo "⚠️  Файл не найден: $file"
         return
     fi
     
-    echo "[Файл: $(basename $file)]"
-    grep -A $context -B 2 "$pattern" "$file" 2>/dev/null || echo "Паттерн не найден"
+    echo "[Файл: $(basename "$file")]"
+    # Используем -E для расширенных regex (для паттернов с |)
+    grep -E -A "$context" -B 2 "$pattern" "$file" 2>/dev/null || echo "Паттерн не найден"
     echo ""
 }
 
@@ -45,7 +65,8 @@ echo ""
 
 # Поиск структуры kfd_local_mem_info
 echo "→ Структура kfd_local_mem_info:"
-grep -A 10 "struct kfd_local_mem_info" "$KERNEL_SRC/drivers/gpu/drm/amd/include"/*.h 2>/dev/null | head -20
+# Используем find для корректной обработки wildcard
+find "$INCLUDE_DIR" -maxdepth 1 -name "*.h" -exec grep -A 10 "struct kfd_local_mem_info" {} + 2>/dev/null | head -20
 echo ""
 
 # Поиск как заполняется local_mem_info
@@ -58,12 +79,16 @@ echo "[2] ПРОВЕРКА ИНИЦИАЛИЗАЦИИ ДЛЯ GFX7 (Kaveri/Liverp
 echo "═══════════════════════════════════════════════════════════════"
 echo ""
 
-# Поиск кода для GFX7
-echo "→ Инициализация GFX7/CIK:"
-show_code_section "$AMDGPU_DIR/amdgpu_amdkfd_gfx_v7.c" "get_local_mem_info" 15
+# Поиск кода для получения информации о памяти
+# Примечание: get_local_mem_info находится в общем файле amdgpu_amdkfd.c
+echo "→ Функция get_local_mem_info (общий драйвер):"
+show_code_section "$AMDGPU_DIR/amdgpu_amdkfd.c" "amdgpu_amdkfd_get_local_mem_info" 20
 
-echo "→ Конфигурация памяти GFX7:"
-show_code_section "$AMDGPU_DIR/amdgpu_amdkfd_gfx_v7.c" "mem_info" 15
+echo "→ Инициализация GFX7/CIK устройств:"
+show_code_section "$AMDGPU_DIR/amdgpu_amdkfd_gfx_v7.c" "kfd2kgd_funcs" 15
+
+echo "→ Конфигурация памяти в GFX7:"
+show_code_section "$AMDGPU_DIR/amdgpu_amdkfd_gfx_v7.c" "vram|local_mem" 10
 
 echo "═══════════════════════════════════════════════════════════════"
 echo "[3] ПРОВЕРКА DEVICE PROPERTIES В TOPOLOGY"
@@ -87,9 +112,14 @@ NODE_PATH="/sys/class/kfd/kfd/topology/nodes/1"
 if [ -d "$NODE_PATH" ]; then
     echo "→ Актуальные значения из KFD Node 1:"
     echo ""
-    grep -E "(local_mem_size|max_allocatable|mem_banks_count|array_count|simd_count|cu_per)" "$NODE_PATH/properties" | while read line; do
-        echo "  $line"
-    done
+    # Читаем и выводим свойства узла KFD
+    if [ -f "$NODE_PATH/properties" ]; then
+        grep -E "(local_mem_size|max_allocatable|mem_banks_count|array_count|simd_count|cu_per)" "$NODE_PATH/properties" | while read -r line; do
+            echo "  $line"
+        done
+    else
+        echo "⚠️  Файл properties не найден"
+    fi
     echo ""
 else
     echo "⚠️  KFD Node 1 не найден в sysfs"
@@ -126,7 +156,7 @@ echo "3. Проверьте kfd_crat.c строка ~2156"
 echo "   → Там может быть принудительное обнуление для APU"
 echo ""
 echo "4. Добавьте debug вывод в dmesg:"
-echo "   → printk(KERN_INFO \"KFD: local_mem_size_public=%llu\\n\", ...)"
+echo '   → printk(KERN_INFO "KFD: local_mem_size_public=%llu\n", ...)'
 echo "   → Перекомпилируйте модуль и проверьте dmesg | grep KFD"
 echo ""
 

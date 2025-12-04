@@ -1,36 +1,41 @@
-# Пересборка ядра с обновлённой конфигурацией Gladius
+# Пересборка ядра с поддержкой Gladius (PS4 Pro)
 
-## Изменения
+## Внесённые изменения
 
-**Файл**: `drivers/gpu/drm/amd/amdgpu/gfx_v7_0.c`
+1. **`drivers/gpu/drm/amd/amdgpu/gfx_v7_0.c`**:
+   - Установлено `max_cu_per_sh = 9`.
+   - Конфигурация: 4 SE × 1 SH × 9 CU = **36 Total CU**.
+   - Активных: **32 CU** (4 отключены/harvested).
+   - Это позволит использовать все доступные вычислительные блоки.
 
-```c
-case CHIP_GLADIUS:
-    adev->gfx.config.max_cu_per_sh = 7;  // 28 CU (было 8)
-```
-
-**Причина**: OpenCL детектирует 28 активных CU, а не 32. Это harvesting (4 CU отключены).
+2. **`drivers/gpu/drm/amd/amdgpu/cik.c`**:
+   - Включён **PowerPlay (DPM)** для Gladius.
+   - Добавлен `kv_smu_ip_block` (как для Kaveri APU).
+   - Это позволит динамически менять частоту GPU (SCLK) и памяти (MCLK).
 
 ---
 
-## Команды для пересборки
+## Инструкция по пересборке
+
+Выполните следующие команды в терминале:
 
 ```bash
-cd ~/Documents/myPS4Linux
+cd ~/Documents/dev/myPS4Linux
 
-# Сборка ядра
+# 1. Сборка ядра (используя все ядра CPU)
 make -j$(nproc)
 
-# Установка модулей
+# 2. Установка модулей
 sudo make modules_install
 
-# Установка ядра
+# 3. Установка ядра
 sudo make install
 
-# Обновление GRUB
+# 4. Обновление initramfs и GRUB (обычно делается автоматически make install, но для надежности)
+sudo update-initramfs -u
 sudo update-grub
 
-# Перезагрузка
+# 5. Перезагрузка
 sudo reboot
 ```
 
@@ -38,19 +43,25 @@ sudo reboot
 
 ## Проверка после перезагрузки
 
+### 1. Проверка частоты (DPM)
+Запустите скрипт мониторинга:
 ```bash
-# Проверить количество CU
-cat /sys/class/kfd/kfd/topology/nodes/1/properties | grep simd_count
-# Должно быть: simd_count 112 (28 CU × 4 SIMD)
-
-# Проверить OpenCL
-cd ~/Documents/myPS4Linux
-./test_opencl_devices
-# Должно показать: Compute Units: 28
+cd ~/Documents/dev/myPS4Linux
+chmod +x monitor_gpu.sh
+./monitor_gpu.sh
 ```
+Должны отображаться текущие частоты SCLK/MCLK и загрузка.
 
----
+### 2. Проверка количества CU
+```bash
+cat /sys/class/kfd/kfd/topology/nodes/1/properties | grep simd_count
+```
+Ожидается: `simd_count 128` (32 CU × 4 SIMD) или `144` (36 CU × 4 SIMD).
+Ранее было 112 (28 CU).
 
-## Готово!
-
-После перезагрузки OpenCL будет работать с правильной конфигурацией 28 CU.
+### 3. Тест производительности (FLOPS)
+Скомпилируйте и запустите тест (требуется доработка загрузчика):
+```bash
+./compile_flops.sh
+# Запуск через KFD (потребуется дополнительная утилита)
+```
