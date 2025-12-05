@@ -3012,7 +3012,7 @@ static int kv_dpm_sw_init(void *handle)
 	adev->pm.current_mclk = adev->clock.default_mclk;
 	adev->pm.int_thermal_type = THERMAL_TYPE_NONE;
 
-	if (amdgpu_dpm == 0)
+	if (amdgpu_dpm == 0 && adev->asic_type != CHIP_GLADIUS)
 		return 0;
 
 	INIT_WORK(&adev->pm.dpm.thermal.work, amdgpu_dpm_thermal_work_handler);
@@ -3054,6 +3054,8 @@ static int kv_dpm_hw_init(void *handle)
 	struct amdgpu_device *adev = (struct amdgpu_device *)handle;
 
 	if (!amdgpu_dpm)
+
+	//if (!amdgpu_dpm && adev->asic_type != CHIP_GLADIUS)
 		return 0;
 
 	mutex_lock(&adev->pm.mutex);

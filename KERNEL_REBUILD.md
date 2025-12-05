@@ -22,8 +22,13 @@
 ```bash
 cd ~/Documents/dev/myPS4Linux
 
-# 1. Сборка ядра (используя все ядра CPU)
-make -j$(nproc)
+# 1. Установка правильного компилятора (GCC 9)
+# Ядро нестабильно на GCC 11, требуется GCC 9.4
+sudo apt update
+sudo apt install gcc-9
+
+# 2. Сборка ядра с GCC 9
+make CC=gcc-9 -j$(nproc)
 
 # 2. Установка модулей
 sudo make modules_install

@@ -5,6 +5,13 @@ echo "Monitoring SCLK (Shader Clock) and MCLK (Memory Clock)..."
 echo "Press Ctrl+C to exit."
 echo ""
 
+if grep -q "amdgpu.dpm=0" /proc/cmdline; then
+    echo "⚠️  WARNING: DPM is DISABLED in kernel parameters (amdgpu.dpm=0)!"
+    echo "   Frequencies will be stuck at default (low) values."
+    echo "   Run 'sudo ./fix_dpm_boot.sh' and reboot to fix this."
+    echo ""
+fi
+
 while true; do
     # Try to read clocks from sysfs (if DPM is enabled)
     SCLK=$(cat /sys/class/drm/card1/device/pp_dpm_sclk 2>/dev/null | grep "*" | awk '{print $2}')
@@ -27,6 +34,6 @@ while true; do
         TEMP=$(($TEMP/1000))
     fi
 
-    echo -ne "SCLK: ${SCLK:-N/A} | MCLK: ${MCLK:-N/A} | Load: ${LOAD:-0}% | Temp: ${TEMP:-N/A}C \r"
+    printf "SCLK: %-8s | MCLK: %-8s | Load: %-3s%% | Temp: %-3sC \r" "${SCLK:-N/A}" "${MCLK:-N/A}" "${LOAD:-0}" "${TEMP:-N/A}"
     sleep 1
 done
