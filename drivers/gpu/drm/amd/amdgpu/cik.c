@@ -2634,7 +2634,7 @@ int cik_set_ip_blocks(struct amdgpu_device *adev)
 		amdgpu_device_ip_block_add(adev, &cik_common_ip_block);
 		amdgpu_device_ip_block_add(adev, &gmc_v7_0_ip_block);
 		amdgpu_device_ip_block_add(adev, &cik_ih_ip_block);
-		amdgpu_device_ip_block_add(adev, &kv_smu_ip_block); // PowerPlay/DPM for APU
+		//amdgpu_device_ip_block_add(adev, &kv_smu_ip_block); // PowerPlay/DPM for APU
 		if (adev->enable_virtual_display)
 			amdgpu_device_ip_block_add(adev, &amdgpu_vkms_ip_block);
 #if defined(CONFIG_DRM_AMD_DC)
